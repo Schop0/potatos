@@ -6,6 +6,7 @@ ORG 7C00h
 
     text_string db 'PotatOS 1.2', 0
     prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
+    goodbye_string db `\r`, `\n`, 'Press any key to reboot...', 0
 
 
 main:
@@ -29,6 +30,9 @@ main:
     call next_line                      ; Call our line-echoing routine
 
     ret                                  ; This is only happens on rainy days
+
+reboot:
+    jmp 0xFFFF:0x0000                    ; Jump back to BIOS ROM address
 
 
 print_string:                            ; Routine: output string in SI to screen
@@ -59,11 +63,27 @@ next_line:
     cmp al, `\r`                         ; Check for carriage return (enter key)
     je next_line
 
+    cmp ah,0x01                          ; Check for escape key
+    je .escape
+
     mov ah, 0Eh
     add bl, 01h                          ; change color
     int 0x10
 
     jmp .infinite                        ; Jump here - infinite loop!
+
+.escape:
+    mov ah, 0                            ; Set video mode function for int 10h
+    mov al, 3                            ; Video Text mode 80x25 16-color
+    int 10h
+
+    mov si, goodbye_string
+	call print_string
+
+    mov ah, 0                            ; Character input service for kbd int.
+    int 16h                              ; Keyboard interrupt puts key in al
+
+    jmp reboot
 
 
     times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
