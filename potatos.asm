@@ -5,8 +5,10 @@ BITS 16
                                          ; next instruction to the call stack.
     jmp main                             ; Skip over data
 
+
     text_string db 'PotatOS 1.2', 0
     prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
+
 
 main:
     pop ax                               ; Retrieve last-called instruction's address
@@ -42,8 +44,6 @@ main:
     int 0x10
 
     jmp .infinite                        ; Jump here - infinite loop!
-
-
 
 
 print_string:                            ; Routine: output string in SI to screen
