@@ -1,10 +1,7 @@
 BITS 16
 ORG 7C00h
 
-    call +0                              ; Relative call to the next instruction,
-                                         ; effectively pushing the address of the
-                                         ; next instruction to the call stack.
-    jmp main                             ; Skip over data
+    call main                            ; Skip over data
 
 
     text_string db 'PotatOS 1.2', 0
@@ -12,8 +9,7 @@ ORG 7C00h
 
 
 main:
-    pop ax                               ; Retrieve last-called instruction's address
-                                         ; Let's assume that was the 2nd instruction
+    pop ax                               ; Address of instruction right after last call
     sub ax, 2                            ; Calculate the address just before our code
     mov sp, ax                           ; Start the stack there
     mov bx, cs                           ; Load the code segment we're in
