@@ -10,9 +10,7 @@ main:
     mov sp, ax                           ; Start the stack there
     mov bx, cs                           ; Load the code segment we're in
     mov ss, bx                           ; Make sure stack uses the same segment
-
-    mov ax, 07C0h                        ; Set data segment to where we're loaded
-    mov ds, ax
+    mov ds, bx                           ; Use the same segment for data as well
 
     mov ah, 0                            ; Set video mode function for int 10h
     mov al, 12h                          ; Video graphics mode 640x480 16-color
