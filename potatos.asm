@@ -1,4 +1,5 @@
 BITS 16
+ORG 7C00h
 
     call +0                              ; Relative call to the next instruction,
                                          ; effectively pushing the address of the
@@ -29,21 +30,9 @@ main:
     mov si, text_string                  ; Put string position into SI
     call print_string                    ; Call our string-printing routine
 
-.next_line:
-    mov si, prompt
-    call print_string
-.infinite:
-    mov ah, 0                            ; Character input service for kbd int.
-    int 16h                              ; Keyboard interrupt puts key in al
+    call next_line                      ; Call our line-echoing routine
 
-    cmp al, `\r`                         ; Check for carriage return (enter key)
-    je .next_line
-
-    mov ah, 0Eh
-    add bl, 01h                          ; change color
-    int 0x10
-
-    jmp .infinite                        ; Jump here - infinite loop!
+    ret                                  ; This is only happens on rainy days
 
 
 print_string:                            ; Routine: output string in SI to screen
@@ -62,6 +51,23 @@ print_string:                            ; Routine: output string in SI to scree
 
 .done:
     ret
+
+
+next_line:
+    mov si, prompt
+    call print_string
+.infinite:
+    mov ah, 0                            ; Character input service for kbd int.
+    int 16h                              ; Keyboard interrupt puts key in al
+
+    cmp al, `\r`                         ; Check for carriage return (enter key)
+    je next_line
+
+    mov ah, 0Eh
+    add bl, 01h                          ; change color
+    int 0x10
+
+    jmp .infinite                        ; Jump here - infinite loop!
 
 
     times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
