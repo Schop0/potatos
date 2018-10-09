@@ -1,6 +1,9 @@
 BITS 16
 
+    jmp main                             ; Skip over data
 
+    text_string db 'PotatOS 1.2', 0
+    prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
 
 main:
     mov ax, 07C0h                        ; Set up 4K stack space after this bootloader
@@ -34,8 +37,6 @@ main:
 
     jmp .infinite                        ; Jump here - infinite loop!
 
-    text_string db 'PotatOS 1.2', 0
-    prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
 
 
 
