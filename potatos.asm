@@ -1,16 +1,24 @@
 BITS 16
 
+    call +0                              ; Relative call to the next instruction,
+                                         ; effectively pushing the address of the
+                                         ; next instruction to the call stack.
     jmp main                             ; Skip over data
 
     text_string db 'PotatOS 1.2', 0
     prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
 
 main:
-    mov ax, 7C00h-1                      ; Address just before our code
+    pop ax                               ; Retrieve last-called instruction's address
+                                         ; Let's assume that was the 2nd instruction
+    sub ax, 2                            ; Calculate the address just before our code
     mov sp, ax                           ; Start the stack there
     mov bx, cs                           ; Load the code segment we're in
     mov ss, bx                           ; Make sure stack uses the same segment
     mov ds, bx                           ; Use the same segment for data as well
+
+    inc ax                               ; Calculate our code's base address
+    push ax                              ; Save it for a rainy day
 
     mov ah, 0                            ; Set video mode function for int 10h
     mov al, 12h                          ; Video graphics mode 640x480 16-color
