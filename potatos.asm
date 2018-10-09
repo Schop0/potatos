@@ -6,10 +6,10 @@ BITS 16
     prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
 
 main:
-    mov ax, 07C0h                        ; Set up 4K stack space after this bootloader
-    add ax, 512                          ; (4096 + 512) / 16 bytes per paragraph
-    mov ss, ax
-    mov sp, 4096
+    mov ax, 7C00h-1                      ; Address just before our code
+    mov sp, ax                           ; Start the stack there
+    mov bx, cs                           ; Load the code segment we're in
+    mov ss, bx                           ; Make sure stack uses the same segment
 
     mov ax, 07C0h                        ; Set data segment to where we're loaded
     mov ds, ax
