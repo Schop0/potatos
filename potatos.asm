@@ -4,7 +4,6 @@ ORG 7C00h
     call main                            ; Skip over data
 
 
-    text_string db 'PotatOS 1.2', 0
     prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
     goodbye_string db `\r`, `\n`, 'Press any key to reboot...', 0
 
@@ -16,11 +15,14 @@ main:
     mov bx, cs                           ; Load the code segment we're in
     mov ss, bx                           ; Make sure stack uses the same segment
     mov ds, bx                           ; Use the same segment for data as well
+    mov es, bx                           ; And the same for the extra segment
 
     inc ax                               ; Calculate our code's base address
     push ax                              ; Save it for a rainy day
 
-    mov si, text_string                  ; Put string position into SI
+    mov cx, 2                            ; Sector 2
+    call load_sector                     ; Load sector cx
+    mov si, 0x1000                       ; Address of string after loading
     call print_string                    ; Call our string-printing routine
 
     call next_line                      ; Call our line-echoing routine
@@ -74,5 +76,21 @@ next_line:
     jmp reboot
 
 
+load_sector:
+    mov al, 1                            ; Number of sectors to load
+    mov bx, 0x1000                       ; Destination in extra segment (es:bx)
+    mov dh, 0                            ; Head number 0 (CHS addressing)
+
+    mov ah, 0x02                         ; Set read sectors function for int13
+    int 0x13
+    jc reboot                            ; Error. Good luck. Bye.
+
+    ret
+
+
     times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
     dw 0xAA55                            ; The standard PC boot signature
+    ; From here on we are no longer in the boot sector but in sector 2
+
+
+    text_string db 'PotatOS 1.4 says Hello from sector 2!', 0
