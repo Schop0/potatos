@@ -20,10 +20,6 @@ main:
     inc ax                               ; Calculate our code's base address
     push ax                              ; Save it for a rainy day
 
-    mov ah, 0                            ; Set video mode function for int 10h
-    mov al, 12h                          ; Video graphics mode 640x480 16-color
-    int 10h
-
     mov si, text_string                  ; Put string position into SI
     call print_string                    ; Call our string-printing routine
 
@@ -36,18 +32,14 @@ reboot:
 
 
 print_string:                            ; Routine: output string in SI to screen
-    mov bl, 01h                          ; first color in the palette
-
-.repeat
     lodsb                                ; Get character from string (source segment)
     cmp al, 0
     je .done                             ; If char is zero, end of string
 
     mov ah, 0Eh                          ; int 10h 'print char' function TTY mode
-    add bl, 01h                          ; change color
     int 10h                              ; Otherwise, print it
 
-    jmp .repeat
+    jmp print_string
 
 .done:
     ret
@@ -73,10 +65,6 @@ next_line:
     jmp .infinite                        ; Jump here - infinite loop!
 
 .escape:
-    mov ah, 0                            ; Set video mode function for int 10h
-    mov al, 3                            ; Video Text mode 80x25 16-color
-    int 10h
-
     mov si, goodbye_string
 	call print_string
 
