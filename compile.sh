@@ -1,4 +1,4 @@
 #!/bin/bash
 
 nasm -f bin potatos.asm
-qemu-system-i386 -s -fda potatos -boot a
+qemu-system-x86_64 -drive file=potatos,format=raw
