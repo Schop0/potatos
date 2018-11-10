@@ -1,17 +1,19 @@
 BITS 16
 ORG 7C00h
 
-    call main                            ; Skip over data
+    jmp main                             ; Skip over data
 
-
-    welcome_msg db 'PotatOS 1.5 says Hai!', 0
-    prompt db `\r`, `\n`, '> ', 0        ; "> " on the start of a new line
-    goodbye_string db `\r`, `\n`, 'Press any key to reboot...', 0
-	trace_msg db '[trace]', 0
+;========================================;
+;	Data
+;========================================;
+    welcome_msg db 'Booting...', 0
 	gdtr dq 0                            ; Reserve at least 48 bits for gdtr
 
-
+;========================================;
+;	main
+;========================================;
 main:
+    ; Do some initial setup in protected mode
     pop ax                               ; Address of instruction right after last call
     sub ax, 2                            ; Calculate the address just before our code
     mov sp, ax                           ; Start the stack there
@@ -20,52 +22,50 @@ main:
     mov ds, bx                           ; Use the same segment for data as well
     mov es, bx                           ; And the same for the extra segment
 
-    inc ax                               ; Calculate our code's base address
-    push ax                              ; Save it for a rainy day
-
+	; Print a welcome message
     mov si, welcome_msg                  ; Address to load to
     call puts                            ; Call our string-printing routine
 
+	; Load more disk sectors
     mov cx, 2                            ; Sector 2
     call load_sector                     ; Load sector cx
 
+	; Set video mode
 	mov ax, 3                            ; Video mode 3: 80x25 character text
 	int 10h                              ; Set video mode
 
-	; Activate A20
+	; Enble >1MB addressable memory
     mov ax,2401h
-    int 15h
+    int 15h                              ; Activate A20
 
-	; Disable interrupts
-	cli
+	; Protect ourselves from interrupts during transition to protected mode
+	cli                                  ; Disable interrupts
 
-	; Load Global Descriptor Regiser
-    XOR   EAX, EAX
-    MOV   AX, DS
-    SHL   EAX, 4
-    ADD   EAX, 7E00h
-    MOV   [gdtr + 2], eax
-    MOV   EAX, 23
-    MOV   [gdtr], AX
-    LGDT  [gdtr]
+	; Set up Global Descriptor Table
+    MOV   EAX, 23                        ; Size of gdt
+    MOV   [gdtr], AX                     ; set size in lower 2 bytes of gdtr
+    XOR   EAX, EAX                       ; Clear eax
+    MOV   AX, DS                         ; start at our data segment
+    SHL   EAX, 4                         ; calculate address from page number
+    ADD   EAX, 7E00h                     ; add offset where we loaded our gdt
+    MOV   [gdtr + 2], eax                ; set gdt pointer in upper 4 bits of gdtr
+    LGDT  [gdtr]                         ; Start using our new GDT
 
-	; Enable protected mode
+	; Enable protected mode bit
 	mov eax, cr0
 	or al, 1
 	mov cr0, eax
 
-	; long call into protected mode PotatOS
+	; Long jump into protected mode code
 	jmp 08h:PotatOS
 
-
-    call next_line                      ; Call our line-echoing routine
-
-    ret                                  ; This is only happens on rainy days
 
 reboot:
     jmp 0xFFFF:0x0000                    ; Jump back to BIOS ROM address
 
-
+;========================================;
+;	puts
+;========================================;
 puts:                                    ; Routine: output string in SI to screen
     lodsb                                ; Get character from string (source segment)
     cmp al, 0
@@ -79,36 +79,9 @@ puts:                                    ; Routine: output string in SI to scree
 .done:
     ret
 
-
-next_line:
-    mov si, prompt
-    call puts
-.infinite:
-    mov ah, 0                            ; Character input service for kbd int.
-    int 16h                              ; Keyboard interrupt puts key in al
-
-    cmp al, `\r`                         ; Check for carriage return (enter key)
-    je next_line
-
-    cmp ah,0x01                          ; Check for escape key
-    je .escape
-
-    mov ah, 0Eh
-    add bl, 01h                          ; change color
-    int 0x10
-
-    jmp .infinite                        ; Jump here - infinite loop!
-
-.escape:
-    mov si, goodbye_string
-	call puts
-
-    mov ah, 0                            ; Character input service for kbd int.
-    int 16h                              ; Keyboard interrupt puts key in al
-
-    jmp reboot
-
-
+;========================================;
+;	load_sector
+;========================================;
 load_sector:
     mov al, 1                            ; Number of sectors to load
     mov bx, 7E00h                        ; Destination in extra segment (es:bx)
@@ -120,19 +93,21 @@ load_sector:
     jc reboot                            ; Error. Good luck. Bye.
 
     ret
-
-
+;========================================;
+;	Boot sector padding and signature
+;========================================;
     times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
     dw 0xAA55                            ; The standard PC boot signature
-    ; From here on we are no longer in the boot sector but in sector 2
 
+;========================================;
 ; Global Descriptor Table
-; offset 0x0
+;========================================;
 GDT:
+; offset 0x00
 .null:
 	dq 0
 
-; offset 0x8
+; offset 0x08
 .code:				; cs should point to this descriptor
 	dw 0xffff		; segment limit first 0-15 bits
 	dw 0			; base first 0-15 bits
@@ -150,8 +125,14 @@ GDT:
 	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
 	db 0			; base 24-31 bits
 
-
+;========================================;
+; Protected mode code directive
+;========================================;
 BITS 32
+
+;========================================;
+; PotatOS
+;========================================;
 PotatOS:
     mov ah, 0x07		; Load color
 
@@ -165,10 +146,11 @@ PotatOS:
 	add edi, 2			; Next destination position
 	inc esi				; Next source character
 	jmp .loop
-	
+
 
 halt:
+	hlt
 	jmp halt
 
 
-	pmode_msg db 'PotatOS v1.5: This is 32-bit protected mode code! Feel free to replace this (sector 2) with your own application of at most 512 bytes. It will be loaded and executed at address 7E00h. ', 0
+	pmode_msg db 'This is 32-bit protected mode code! Feel free to replace this (sector 2) with your own application of at most 512 bytes. It will be loaded and executed at address virtual address 00h.', 0
