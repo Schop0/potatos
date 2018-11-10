@@ -42,14 +42,11 @@ main:
 	cli                                  ; Disable interrupts
 
 	; Set up Global Descriptor Table
-    MOV   EAX, 23                        ; Size of gdt
-    MOV   [gdtr], AX                     ; set size in lower 2 bytes of gdtr
-    XOR   EAX, EAX                       ; Clear eax
-    MOV   AX, DS                         ; start at our data segment
-    SHL   EAX, 4                         ; calculate address from page number
-    ADD   EAX, 7E00h                     ; add offset where we loaded our gdt
-    MOV   [gdtr + 2], eax                ; set gdt pointer in upper 4 bits of gdtr
-    LGDT  [gdtr]                         ; Start using our new GDT
+    MOV eax, 23                          ; Load size of gdt
+    MOV [gdtr], ax                       ; set it in lower 2 bytes of gdtr
+	MOV eax, gdt                         ; Load address of gdt
+    MOV [gdtr + 2], eax                  ; set it in upper 4 bits of gdtr
+    LGDT [gdtr]                          ; Start using our new GDT
 
 	; Enable protected mode bit
 	mov eax, cr0
@@ -93,16 +90,11 @@ load_sector:
     jc reboot                            ; Error. Good luck. Bye.
 
     ret
-;========================================;
-;	Boot sector padding and signature
-;========================================;
-    times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
-    dw 0xAA55                            ; The standard PC boot signature
 
 ;========================================;
 ; Global Descriptor Table
 ;========================================;
-GDT:
+gdt:
 ; offset 0x00
 .null:
 	dq 0
@@ -126,6 +118,12 @@ GDT:
 	db 0			; base 24-31 bits
 
 ;========================================;
+;	Boot sector padding and signature
+;========================================;
+    times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
+    dw 0xAA55                            ; The standard PC boot signature
+
+;========================================;
 ; Protected mode code directive
 ;========================================;
 BITS 32
@@ -141,11 +139,13 @@ PotatOS:
 .loop:
 	mov al, [esi]		; get current character
 	cmp al, 0			; null character?
-	jz halt				; end of string
+	jz .done			; end of string
 	mov [edi], ax		; Print colored character
 	add edi, 2			; Next destination position
 	inc esi				; Next source character
 	jmp .loop
+.done:
+	jmp halt
 
 
 halt:
@@ -153,4 +153,4 @@ halt:
 	jmp halt
 
 
-	pmode_msg db 'This is 32-bit protected mode code! Feel free to replace this (sector 2) with your own application of at most 512 bytes. It will be loaded and executed at address virtual address 00h.', 0
+	pmode_msg db 'This is 32-bit protected mode code! Feel free to replace this (sector 2) with your own application of at most 512 bytes. It will be loaded and executed at address 7E00h so adjust your linker script accordingly.', 0
