@@ -32,9 +32,11 @@ mkimage()
 	# Extract MBR from bootloader, ignoring any extra code
 	dd if="$BOOTLOADER" bs=512 count=1 of=MBR.bin 2>/dev/null
 
-	# Create a partition image and format it as FAT32
+	# Create an empty partition image
 	dd if=/dev/zero bs=$PART_SIZE count=0 seek=1 of=FS.part 2>/dev/null
-	mkfs.vfat FS.part >/dev/null
+
+	# Format it as fat32 explicitly so there is no need to support fat16 or fat12
+	mkfs.fat -F 32 FS.part >/dev/null
 
 	# Combine the MBR and partition to a full-disk image
 	# Note that the first partition is aligned to 1MB as required by fdisk
