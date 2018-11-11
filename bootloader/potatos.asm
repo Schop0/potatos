@@ -118,39 +118,41 @@ gdt:
 	db 0			; base 24-31 bits
 
 ;========================================;
+; Partition table
+;========================================;
+	times 446-($-$$) db 0            ; Pad boot code with 0s up until the partition table
+
+	; Partition 1
+	times 16 db 0 ; Empty partition table entry
+
+;	db 0x80                          ; Set bootable flag (bit 7)
+	; 24-bit CHS address of first sector
+;	db  ; bits 0-7: Head
+;	dw  ; bits 8-13: Sector & bits 14-23: cylinder
+;	db 0x0B ; identifier for fat32 partition type
+	; 24-bit CHS address of last sector
+;	db  ; bits 0-7: Head
+;	dw  ; bits 8-13: Sector & bits 14-23: cylinder
+;	dq 1 ; 32-bit logical block address of first sector
+;	dq  ; 32-bit number of sectors in partition
+
+	; Partiton 2
+	times 16 db 0 ; Empty partition table entry
+
+	; Partiton 3
+	times 16 db 0 ; Empty partition table entry
+
+	; Partiton 4
+	times 16 db 0 ; Empty partition table entry
+
+;========================================;
 ;	Boot sector padding and signature
 ;========================================;
     times 510-($-$$) db 0                ; Pad remainder of boot sector with 0s
     dw 0xAA55                            ; The standard PC boot signature
 
 ;========================================;
-; Protected mode code directive
+; PotatOS stub
 ;========================================;
 BITS 32
-
-;========================================;
-; PotatOS
-;========================================;
 PotatOS:
-    mov ah, 0x07		; Load color
-
-	mov edi, 0xB8000	; Destination: video base address
-	mov esi, pmode_msg	; Source
-.loop:
-	mov al, [esi]		; get current character
-	cmp al, 0			; null character?
-	jz .done			; end of string
-	mov [edi], ax		; Print colored character
-	add edi, 2			; Next destination position
-	inc esi				; Next source character
-	jmp .loop
-.done:
-	jmp halt
-
-
-halt:
-	hlt
-	jmp halt
-
-
-	pmode_msg db 'This is 32-bit protected mode code! Feel free to replace this (sector 2) with your own application of at most 512 bytes. It will be loaded and executed at address 7E00h so adjust your linker script accordingly.', 0
