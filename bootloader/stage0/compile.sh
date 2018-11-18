@@ -1,5 +1,10 @@
 #!/bin/bash
 set -e
 
-nasm -f bin potatos.asm
-echo "Created potatos"
+if [ "$1" == "clean" ]; then
+	rm -vf stage0
+	exit
+fi
+
+nasm -f bin stage0.asm
+echo "Created stage0"
