@@ -1,28 +1,18 @@
-#define VIDEO_MEMORY    0xB8000
-#define GRAY_ON_BLACK   0x07
+#define __NOINLINE __attribute__((noinline))
+#define __REGPARM  __attribute__((regparm(3)))
 
-void print(char *str)
+void __NOINLINE __REGPARM print(char *str)
 {
-	char *video_memory = (char *) VIDEO_MEMORY;
-	char c;
-
-	while ( c = *str++ ) {
-		*video_memory++ = c;
-		*video_memory++ = GRAY_ON_BLACK;
-	}
-}
-
-void halt(void)
-{
-	asm("cli");
-	while (1) {
-		asm("hlt");
+	while ( *str ) {
+		__asm__ __volatile__ ("int  $0x10" : : "a"(0x0E00 | *str), "b"(7));
+		str++;
 	}
 }
 
 void main(void)
 {
-	print( "Hello from 32-bit protected mode C code!" );
+	print( "Spud Gun launching PotatOS...\r\n(not yet implemented ;)\r\n" );
 
-	halt();
+	asm("cli");	// disable all maskable interrupts
+	while (1) { asm("hlt");	}	// Keep halting, ignoring non-maskable interrupts
 }
