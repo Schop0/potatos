@@ -1,12 +1,7 @@
-#define __NOINLINE __attribute__((noinline))
-#define __REGPARM  __attribute__((regparm(3)))
-
-void __NOINLINE __REGPARM print(char *str)
+void print(char *str)
 {
-	while ( *str ) {
+	for ( ; *str; str++)
 		__asm__ __volatile__ ("int  $0x10" : : "a"(0x0E00 | *str), "b"(7));
-		str++;
-	}
 }
 
 void main(void)
